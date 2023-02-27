@@ -1,0 +1,21 @@
+<launch>
+  <arg name="use_bagfile" default="true"/>
+
+  <include file="$(find gocator_sim)/launch/robot40.launch"></include>
+
+  <group if="$(arg use_bagfile)">
+    <node pkg="rosbag" type="play" name="rosbag_gocator_out"  args="  -l  $(find gocator_bridge)/bagfiles/gocator_out.bag"/>
+  </group>
+  <group unless="$(arg use_bagfile)">
+    <node name="get_profile" pkg="gocator_bridge" type="get_profile" output="screen"></node>
+  </group>
+
+  <node name="convert_profile" pkg="gocator_bridge" type="convert_profile" output="screen" ></node>
+  <node name="show_sensor_boundries" pkg="gocator_bridge" type="show_sensor_boundries"></node>
+  <node name="get_surface_robot" pkg="gocator_bridge" type="get_surface_robot" output="screen"></node> 
+ <node name="move_arm" pkg="gocator_sim" type="move_arm" output="screen"/>
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="frame_broadcaster"     args="0. 0.1 0.2         0.1357404  0.0771292  0.0802449  0.9844726    right_arm_gripper_link  gocator_frame " /> 
+  <node pkg="tf2_ros" type="static_transform_publisher" name="map_broadcaster"       args="0 0 0         0 0 0  1  base_link  map " /> 
+
+</launch>	

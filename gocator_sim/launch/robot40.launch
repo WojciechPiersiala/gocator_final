@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="model" default="robot40" doc="model type [burger, waffle, waffle_pi, robot40]"/>
+  <arg name="x_pos" default="0.0"/>
+  <arg name="y_pos" default="0.0"/>
+  <arg name="z_pos" default="0.0"/>
+  <!-- <arg name="limited" default="true"/> -->
+  <arg name="limited" default="false"/>
+  <arg name="sim" default="true"/>
+  <arg name="withGazeboGUI" default="false"/>
+  <arg name="HeadlessGazeboGUI" default="true"/> 
+  <arg name="world" default="empty"/> 
+  <arg name="attach_robot" default="false"/>
+  <arg name="attach_delay" default="10" />
+
+  <group if="$(arg withGazeboGUI)">
+	  <arg name="$(arg HeadlessGazeboGUI)" default="false"/>
+  </group>
+  <group unless="$(arg withGazeboGUI)">
+	  <arg name="$(arg HeadlessGazeboGUI)" default="true"/>
+  	  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot40_description)/rviz/Robot40_office.rviz"  />
+  </group>
+  
+   <include file="$(find gazebo_ros)/launch/empty_world.launch">
+     <arg name="world_name" value="$(find robot40_gazebo)/worlds/robot40_$(arg world).world"/>
+     <arg name="paused" value="false"/>
+     <arg name="use_sim_time" value="true"/>
+     <arg name="gui" value="$(arg withGazeboGUI)"/>
+     <arg name="headless" value="$(arg HeadlessGazeboGUI)"/>
+     <arg name="debug" value="false"/>
+   </include>
+
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find robot40_description)/urdf/robot40_rightUR5.urdf.xacro" />
+    <!-- push robot_description to factory and spawn robot in gazebo -->
+   <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description 
+   -model robot -z 0.1" respawn="false" output="screen" /> 
+   
+     <!-- -J right_arm_shoulder_pan_joint 2.997
+   -J right_arm_shoulder_lift_joint -1.96
+   -J right_arm_elbow_joint -1.87
+   -J right_arm_wrist_1_joint 0.009
+   -J right_arm_wrist_2_joint 1.47
+   -J right_arm_wrist_3_joint 0.78 -->
+   
+<!--   <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf" args="-urdf -model robot40_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description" /> -->
+  
+    <rosparam command="load"
+            file="$(find robot40_gazebo)/config/joints.yaml"
+            ns="robot40_joint_state_controller" />
+
+  <rosparam command="load"
+            file="$(find robot40_gazebo)/config/head.yaml"
+            ns="robot40_head_controller" />
+
+  <node name="robot40_controller_spawner" pkg="controller_manager" type="spawner"
+    args="robot40_joint_state_controller
+          robot40_head_controller"/>
+  <node pkg="controller_ur" name="move_to_pose" type="toPose.py" output="screen"/>
+  <node pkg="controller_ur" name="controller_robot40" type="controller_ur" output="screen"/>
+   <rosparam file="$(find controller_robot40)/config/gazeboSim.yaml" />
+
+ <rosparam file="$(find robot40_gazebo)/config/right_arm_controller_ur5.yaml" command="load"/>
+  <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller/scaled_pos_joint_traj_controller" respawn="false" output="screen"/>
+  
+  <node name="arm_controller_stopped_spawner" pkg="controller_manager" type="controller_manager" args="load arm_controller/joint_group_position_controller" respawn="false" output="screen"/>
+  
+  <!-- run moveit -->
+  <!-- (start your robot's MoveIt! stack, e.g. include its moveit_planning_execution.launch) -->
+  <include file="$(find robot40_right_ur5_moveit_config)/launch/robot40_moveit_planning_execution.launch">
+    <arg name="limited" value="$(arg limited)"/>
+    <arg name="sim" value="$(arg sim)"/>
+  </include>
+  
+
+  <include file="$(find ur_gazebo)/launch/controller_utils.launch"/>
+  
+ <!-- <node pkg="rosservice" type="rosservice" name="rosservice" args="call /gazebo/unpause_physics" launch-prefix="bash -c 'sleep 8; $0 $@' "/> -->
+
+<!--   <rosparam file="$(find ur_gazebo)/controller/arm_controller_ur5.yaml" command="load"/> -->
+<!--   <node name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn arm_controller" respawn="false" output="screen"/> -->
+  
+  <!-- Robot state publisher for the TFs -->
+<!--   <node name="robot_state_publisher1" pkg="robot_state_publisher" type="state_publisher"> -->
+<!--   </node> -->
+  
+  <!-- (start your tracking system's ROS driver) -->
+<!--
+  <include file="$(find easy_handeye)/launch/calibrate.launch">
+    <arg name="eye_on_hand" value="false"/>
+    <arg name="move_group" value="right_arm"/>-->
+
+    <!-- fill in the following parameters according to your robot's published tf frames 
+    <arg name="robot_base_frame" value="/base_link"/>
+    <arg name="robot_effector_frame" value="/right_arm_ee_link"/> -->
+
+    <!-- fill in the following parameters according to your tracking system's published tf frames 
+    <arg name="tracking_base_frame" value="/base_kinect"/>
+    <arg name="tracking_marker_frame" value="/kinect2_base_link"/>
+  </include>
+
+
+<node pkg="tf" type="static_transform_publisher" name="world_broadcaster" args="0 0 0 0 0 0 base_link world 100" />-->
+
+  <group if="$(arg attach_robot)">
+	  <node pkg="rosservice" type="rosservice" name="rosservice" launch-prefix="bash -c 'sleep $(arg attach_delay); $0 $@' " args="call /link_attacher_node/attach 'robot' 'base_footprint' 'ground_plane' 'link' " />
+  </group>
+	
+
+</launch>

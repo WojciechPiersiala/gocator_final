@@ -1,0 +1,19 @@
+<launch>
+    <arg name="sim_time" default="0.1"/>
+    <arg name="use_bagfile" default="true"/>
+
+    <group if="$(arg use_bagfile)">
+        <node pkg="rosbag" type="play" name="rosbag_gocator_out"  args="  -l $(find gocator_bridge)/bagfiles/gocator_out.bag"/>
+    </group>
+    <group unless="$(arg use_bagfile)">
+        <node name="get_profile" pkg="gocator_bridge" type="get_profile" output="screen"></node>
+    </group>
+
+    <node name="convert_profile" pkg="gocator_bridge" type="convert_profile" output="screen" ></node>
+    <node name="show_sensor_boundries" pkg="gocator_bridge" type="show_sensor_boundries"></node>
+    <node name="get_surface" pkg="gocator_bridge" type="get_surface" output="screen" args="$(arg sim_time)"></node>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_broadcaster"     args="0 0 0         0 0 0  1  moving_frame  gocator_frame " /> 
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find gocator_bridge)/rviz/profile.rviz "></node>
+    
+</launch>

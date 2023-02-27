@@ -1,0 +1,25 @@
+<launch>
+    <arg name="use_sim" default="false"/>  
+
+    <group if="$(arg use_sim)">  
+        <node name="get_surface_robot" pkg="gocator_bridge" type="get_surface_robot" output="screen"></node> 
+        <node name="move_arm" pkg="gocator_sim" type="move_arm" output="screen" ></node> 
+    </group>
+
+    <group unless="$(arg use_sim)">  
+
+        <node pkg="rosbag" type="play" name="rosbag_gocator_out"  args="  -l  $(find gocator_bridge)/bagfiles/gocator_out.bag"/>
+
+        <node name="move_arm" pkg="gocator_sim" type="move_arm" output="screen" ></node> 
+        <node name="get_surface_robot" pkg="gocator_bridge" type="get_surface_robot" output="screen"></node> 
+        
+        <node name="convert_profile" pkg="gocator_bridge" type="convert_profile" output="screen" ></node>
+        <node name="show_sensor_boundries" pkg="gocator_bridge" type="show_sensor_boundries"></node>
+        <node pkg="tf2_ros" type="static_transform_publisher" name="frame_broadcaster"     args="0 0 0         0 0 0  1  right_arm_gripper_link  gocator_frame " /> 
+        <node pkg="tf2_ros" type="static_transform_publisher" name="map_broadcaster"       args="0 0 0         0 0 0  1  base_link                map " /> 
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot40_description)/rviz/Robot40_office.rviz"  />
+    </group>
+</launch>
+
+
+

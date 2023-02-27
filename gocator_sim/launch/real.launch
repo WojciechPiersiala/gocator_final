@@ -1,0 +1,31 @@
+<launch>
+    <arg name="use_bagfile" default="false"/>
+    <arg name="use_gui" default="true"/>
+
+    <!-- use real sensor or fake one  -->
+    <group if="$(arg use_bagfile)">
+        <node pkg="rosbag" type="play" name="rosbag_gocator_out"  args="  -l  $(find gocator_bridge)/bagfiles/gocator_out.bag"/>
+    </group>
+    <group unless="$(arg use_bagfile)">
+        <node name="get_profile" pkg="gocator_bridge" type="get_profile" output="screen"></node>
+    </group>
+    
+    <group if="$(arg use_gui)">
+        <node name="ros_gui" pkg="gocator_sim" type="ros_gui.py" output="screen"></node> 
+    </group>
+
+    <!-- visualization in rviz -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find robot40_description)/rviz/Robot40_office.rviz"/>
+
+    <node name="get_surface_robot" pkg="gocator_bridge" type="get_surface_robot" output="screen"></node> 
+
+    <node name="move_arm" pkg="gocator_sim" type="move_arm" output="screen"/>
+
+    <node name="convert_profile" pkg="gocator_bridge" type="convert_profile" output="screen" ></node>
+    <node name="show_sensor_boundries" pkg="gocator_bridge" type="show_sensor_boundries"></node>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="frame_broadcaster"     args="-0.05352679  0.04084312 -0.04752148          0.52751674 0.47316124  0.46974577  0.52648214   right_arm_gripper_link  gocator_frame " /> 
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_broadcaster"       args="0 0 0         0    0    0    1     base_link               map " /> 
+
+</launch>
