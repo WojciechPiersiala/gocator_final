@@ -1,4 +1,4 @@
-# robot_40_gocator
+# Gocator packages
 This repo contains source code used in our diploma work:"Select Determining the nature of measurement errors when scanning objects with an LMI scanner Determining the nature of measurement errors when scanning objects with an LMI scanner"
 
 ## Start simulation
